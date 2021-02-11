@@ -147,7 +147,6 @@ void setup() {
   uint32_t t0 = bl_timer_now_us() / 1000;
   uint32_t t1 = bl_timer_now_us() / 1000;
   while(t1 - t0 < 2000) t1 = bl_timer_now_us() / 1000;
-
   /*
      Init UART0 using pins 16+7 (TX+RX) and baudrate of 2,000,000
      Init UART1 using pins  4+3 (TX+RX) and baudrate of 115,200
@@ -163,21 +162,12 @@ void setup() {
 }
 
 void loop() {
-  int ret = bl_uart_data_recv(1);
-  if (ret > -1 && idx < 255) {
-    while (ret > -1 && idx < 255) {
-      uint8_t c = ret;
-      if (c < 32) c = 0;
-      buf_recv[idx++] = c;
-      if (c == 0) {
-        handleString();
-        idx = 0;
-        memset(buf_recv, 0, 256);
-        return;
-      }
-    }
+  // from int32_t hal_uart_recv_II() in hal_uart.c
+  int ch;
+  while (idx < 255 && (ch = bl_uart_data_recv(1)) >= 0) {
+    buf_recv[idx++] = (uint8_t) ch;
   }
-  vTaskDelay(10);
+  printf("%s\n", buf_recv);
 }
 
 void bfl_main(void) {
