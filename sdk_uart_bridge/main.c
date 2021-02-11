@@ -166,6 +166,7 @@ void loop() {
       buf_recv[total]=0;
       printf("Received: %s\n", buf_recv);
       if (memcmp(buf_recv, "quit!", 5) == 0) {
+        memset(buf_recv, 0, 256);
         printf("Ok then!\n");
         return;
       }
