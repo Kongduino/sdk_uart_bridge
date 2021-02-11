@@ -102,11 +102,6 @@ void user_vApplicationIdleHook(void) {
   /*empty*/
 }
 
-// Let's be an asshole and do it the Arduino way!
-int fd1;
-uint8_t buf_recv[256];
-uint8_t *pbuf = buf_recv;
-
 static void _dump_boot_info(void) {
   char chip_feature[40];
   const char *banner;
@@ -135,51 +130,55 @@ static void _dump_boot_info(void) {
   puts("------------------------------------------------------------\r\n");
 }
 
+// Let's be an asshole and do it the Arduino way!
+int fd1;
+uint16_t idx = 0;
+uint8_t buf_recv[256];
+
+void handleString() {
+  printf("%s\n", buf_recv);
+  if (memcmp(buf_recv, "quit!", 5) == 0) {
+    puts("You a quitter now?");
+  }
+}
+
 void setup() {
   /*
-     Init UART using pins 16+7 (TX+RX) and baudrate of 2M
+     Init UART0 using pins 16+7 (TX+RX) and baudrate of 2,000,000
+     Init UART1 using pins  4+3 (TX+RX) and baudrate of 115,200
   */
   bl_uart_init(0, 16, 7, 255, 255, 2000000);
+  bl_uart_init(1, 4, 3, 255, 255, 115200);
   vTaskDelay(100);
   _dump_boot_info();
   vTaskDelay(100);
   puts("\n\n\nOh hai!\n\n");
-  vTaskDelay(100);
-  puts("aos_open(ttyS1)\n");
-  vTaskDelay(100);
-  fd1 = aos_open("/dev/ttyS1", 0);
-  printf("ttyS1-> fd = %d\r\n", fd1);
-  if (fd1 < 0) {
-    puts(" // That's a big fail! Aborting...\r\n");
-    while(1);
-  }
-  puts(" done\n");
+  idx = 0;
+  memset(buf_recv, 0, 256);
 }
 
-int length = 0, total = 0;
-
 void loop() {
-  length = aos_read(fd1, pbuf, 255);
-    total += length;
-    pbuf += length;
-    printf("%s\n", pbuf);
-    if (total >= 255||buf_recv[total-1]<32) {
-      buf_recv[total]=0;
-      printf("Received: %s\n", buf_recv);
-      if (memcmp(buf_recv, "quit!", 5) == 0) {
+  int ret = bl_uart_data_recv(1);
+  if (ret > -1 && idx < 255) {
+    while (ret > -1 && idx < 255) {
+      uint8_t c = ret;
+      if (c < 32) c = 0;
+      buf_recv[idx++] = c;
+      if (c == 0) {
+        handleString();
+        idx = 0;
         memset(buf_recv, 0, 256);
-        printf("Ok then!\n");
         return;
       }
-      total=0;
     }
-    vTaskDelay(10);
+  }
+  vTaskDelay(10);
 }
 
 void bfl_main(void) {
   setup();
   vTaskDelay(100);
-  while(true) {
+  while (true) {
     loop();
     vTaskDelay(10);
   }
