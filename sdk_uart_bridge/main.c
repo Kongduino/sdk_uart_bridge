@@ -159,8 +159,9 @@ void setup() {
 int length = 0, total = 0;
 
 void loop() {
-  length = aos_read(fd1, pbuf + total, 255);
+  length = aos_read(fd1, pbuf, 255);
     total += length;
+    pbuf += length;
     printf("%s\n", pbuf);
     if (total >= 255||buf_recv[total-1]<32) {
       buf_recv[total]=0;
