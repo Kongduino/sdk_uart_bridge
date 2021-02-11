@@ -36,6 +36,7 @@
 #include <event_device.h>
 #include <bl_uart.h>
 #include <bl_chip.h>
+#include <bl_timer.h>
 #include <hal_uart.h>
 #include <hal_sys.h>
 #include <hal_boot2.h>
@@ -143,15 +144,19 @@ void handleString() {
 }
 
 void setup() {
+  uint32_t t0 = bl_timer_now_us() / 1000;
+  uint32_t t1 = bl_timer_now_us() / 1000;
+  while(t1 - t0 < 2000) t1 = bl_timer_now_us() / 1000;
+
   /*
      Init UART0 using pins 16+7 (TX+RX) and baudrate of 2,000,000
      Init UART1 using pins  4+3 (TX+RX) and baudrate of 115,200
   */
   bl_uart_init(0, 16, 7, 255, 255, 2000000);
+  puts("\n\n\nttyS0 inited\n");
   bl_uart_init(1, 4, 3, 255, 255, 115200);
-  vTaskDelay(100);
+  puts("ttyS1 inited\n");
   _dump_boot_info();
-  vTaskDelay(100);
   puts("\n\n\nOh hai!\n\n");
   idx = 0;
   memset(buf_recv, 0, 256);
